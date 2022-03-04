@@ -11,25 +11,23 @@ df = pd.read_csv('wordbank.csv', names=['words'])
 
 # create data frame for sorted values
 column_names = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
-filtered = pd.DataFrame(columns=column_names)
 singleFil = pd.DataFrame(columns=column_names)
 loc = pd.DataFrame(columns=column_names)
 
 # process the data
 for i in column_names:
-    filtered[i] = df.words.str.count(i)  # total # of times a given letter appears in the word list
-    singleFil[i] = df.words.str.contains(i). astype(int)  # same as above but letters only counted once per word
+    singleFil[i] = df.words.str.contains(i). astype(int)  # total words a letter appears within
     loc[i] = df.words.str.find(i)  # loc: location letter appears within word
 
 loc = loc.mask(loc < 0) + 1
 loc = loc.median(axis=0)
-filtered = filtered.sum(axis=0)
 singleFil = singleFil.sum(axis=0)
 
 # combine data
 wordle = pd.DataFrame({'Probability':singleFil, 'Location':loc})
 wordle = wordle.sort_values(by=['Probability'], ascending=False)
-wordle['Probability'] = wordle['Probability'].div(wordle['Probability'].sum())
+# wordle['Probability'] = wordle['Probability'].div(wordle['Probability'].sum())
+wordle['Probability'] = wordle['Probability'].div(df.size)
 
 # Return a random five letter word
 print(df.words[random.randint(0,len(df))])
