@@ -48,9 +48,7 @@ ax2.set_xlabel("Letter")
 ax2.set_ylabel("Location")
 plt.grid()
 
-loc.hist(column='a')
-loc.hist(column='t')
-loc.hist(column='u')
+for i in range(0,9):
+    loc.hist(column=wordle.index[i])
 
 plt.show()
-
