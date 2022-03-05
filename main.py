@@ -20,11 +20,12 @@ for i in column_names:
     loc[i] = df.words.str.find(i)  # loc: location letter appears within word
 
 loc = loc.mask(loc < 0) + 1
-loc = loc.median(axis=0)
+flatloc = loc.mode(axis=0)
+flatloc = flatloc.T
 singleFil = singleFil.sum(axis=0)
 
 # combine data
-wordle = pd.DataFrame({'Probability':singleFil, 'Location':loc})
+wordle = pd.DataFrame({'Probability':singleFil, 'Location':flatloc[0]})
 wordle = wordle.sort_values(by=['Probability'], ascending=False)
 # wordle['Probability'] = wordle['Probability'].div(wordle['Probability'].sum())
 wordle['Probability'] = wordle['Probability'].div(df.size)
@@ -46,6 +47,10 @@ ax2.set_title("Most Likely Location Within Word")
 ax2.set_xlabel("Letter")
 ax2.set_ylabel("Location")
 plt.grid()
+
+loc.hist(column='a')
+loc.hist(column='t')
+loc.hist(column='u')
 
 plt.show()
 
