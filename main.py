@@ -65,16 +65,24 @@ for i in range(0, len(wordPairs['score'])):
     word1 = [*word1]
     word2 = wordPairs['word2'][i]
     word2 = [*word2]
+    score1 = 0
+    score2 = 0
     for j in range(0, len(word1)):
-        wordPairs['score'][i] += scoreCard[word1[j]][j]
-        wordPairs['score'][i] += scoreCard[word2[j]][j]
+        score1 += scoreCard[word1[j]][j]
+        score2 += scoreCard[word2[j]][j]
+    wordPairs['score'][i] = score1 + score2
+    if score2 > score1:    # place higher value word first within set
+        wordPairs['word1'][i], wordPairs['word2'][i] = wordPairs['word2'][i], wordPairs['word1'][i]
 
-bestWord = wordPairs['score'].idxmax()
-word1 = wordPairs['word1'][wordPairs['score'].idxmax()]
-word2 = wordPairs['word2'][wordPairs['score'].idxmax()]
+wordPairs = wordPairs.sort_values(by=['score'], ascending=False)
+wordPairs.reset_index(drop=True, inplace=True)
 
 #return the best word pair
-print('Best opening set: ' + word1 + ', ' + word2)
+print('Top ten Wordle openings:')
+for i in range(10, 1, -1):
+    print(str(i) + ': ' + wordPairs['word1'][i] + ', ' + wordPairs['word2'][i])
+
+print('Number one opening set per highrollamerola: ' + wordPairs['word1'][0] + ', ' + wordPairs['word2'][0])
 
 # plot stuff
 fig1, ax1 = plt.subplots()
