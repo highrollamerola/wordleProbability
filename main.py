@@ -1,8 +1,10 @@
 import pandas as pd
 import matplotlib
 import random
+import numpy as np
 import matplotlib.pyplot as plt
 matplotlib.use('TkAgg')
+pd.options.mode.chained_assignment = None  # default='warn'
 
 
 # reading csv file
@@ -22,16 +24,57 @@ for i in column_names:
 loc = loc.mask(loc < 0) + 1
 flatloc = loc.mode(axis=0)
 flatloc = flatloc.T
-singleFil = singleFil.sum(axis=0)
+flatFil = singleFil.sum(axis=0)
 
 # combine data
-wordle = pd.DataFrame({'Probability':singleFil, 'Location':flatloc[0]})
+wordle = pd.DataFrame({'Probability':flatFil, 'Location':flatloc[0]})
 wordle = wordle.sort_values(by=['Probability'], ascending=False)
-# wordle['Probability'] = wordle['Probability'].div(wordle['Probability'].sum())
 wordle['Probability'] = wordle['Probability'].div(df.size)
 
-# Return a random five letter word
-print(df.words[random.randint(0,len(df))])
+# create list of words that use 5 of the top 10 letters
+topten = singleFil[wordle.index[0:10]].copy()
+flatTen = topten.sum(axis=1)
+topten = topten[flatTen == 5]
+flatwords = df.words[topten.index[:]] #list of words using 5 of the top ten letters
+# determine word pairs that cover all ten of the top ten letters
+dotwords = topten.dot(topten.T)  #dot product with transpose. Orthogonal pairs cover all ten letters
+dotwords = dotwords.where(np.triu(np.ones(dotwords.shape)).astype(bool))  # take upper triangle of symmetric matrix
+dotwords = dotwords.stack().reset_index()
+dotwords.columns = ['Row', 'Column', 'Value']  # reshape as a list of word pairs and their dot product
+dotwords = dotwords[dotwords['Value'] == 0]  # Values of 0 contain orthogonal word pairs
+
+# construct a dataframe 'wordPairs' containing the desired word pairs
+wordPairs = pd.DataFrame(columns=['word1', 'word2','score'])
+wordPairs['word1'] = df.words[dotwords['Row']]
+wordPairs.reset_index(drop=True, inplace=True)
+word2 =  df.words[dotwords['Column']]
+word2.reset_index(drop=True, inplace=True)
+wordPairs['word2'] = word2
+wordPairs['score'] = np.zeros(len(wordPairs['score']))
+
+# Build dataframe with indexing ['char'][Location] used to score wordPairs
+# Score is based on probability of letter being in the specified location
+scoreCard = pd.DataFrame(columns=wordle.index[range(0, 10)])
+for i in range(0, 10):
+    tmp = np.histogram(loc[wordle.index[i]].dropna().values, bins=5, density=True)
+    scoreCard[wordle.index[i]] = tmp[0]
+
+# Score the wordPairs
+for i in range(0, len(wordPairs['score'])):
+    word1 = wordPairs['word1'][i]
+    word1 = [*word1]
+    word2 = wordPairs['word2'][i]
+    word2 = [*word2]
+    for j in range(0, len(word1)):
+        wordPairs['score'][i] += scoreCard[word1[j]][j]
+        wordPairs['score'][i] += scoreCard[word2[j]][j]
+
+bestWord = wordPairs['score'].idxmax()
+word1 = wordPairs['word1'][wordPairs['score'].idxmax()]
+word2 = wordPairs['word2'][wordPairs['score'].idxmax()]
+
+#return the best word pair
+print('Best opening set: ' + word1 + ', ' + word2)
 
 # plot stuff
 fig1, ax1 = plt.subplots()
@@ -47,8 +90,5 @@ ax2.set_title("Most Likely Location Within Word")
 ax2.set_xlabel("Letter")
 ax2.set_ylabel("Location")
 plt.grid()
-
-for i in range(0,9):
-    loc.hist(column=wordle.index[i])
 
 plt.show()
